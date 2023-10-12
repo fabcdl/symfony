@@ -841,6 +841,21 @@ class ConnectionTest extends TestCase
 
         return Connection::fromDsn('amqp://localhost', [], $factory);
     }
+
+    public function testForcePublishWithDefaultRoutingKey()
+    {
+        $factory = new TestAmqpFactory(
+            $amqpConnection = $this->createMock(\AMQPConnection::class),
+            $amqpChannel = $this->createMock(\AMQPChannel::class),
+            $amqpQueue = $this->createMock(\AMQPQueue::class),
+            $amqpExchange = $this->createMock(\AMQPExchange::class)
+        );
+
+        $amqpExchange->expects($this->once())->method('publish')->with('body', 'default_routing_key');
+
+        $connection = Connection::fromDsn('amqp://localhost?exchange[default_publish_routing_key]=default_routing_key', [], $factory);
+        $connection->publish('body', [], 0, new AmqpStamp('routing_key'), true);
+    }
 }
 
 class TestAmqpFactory extends AmqpFactory

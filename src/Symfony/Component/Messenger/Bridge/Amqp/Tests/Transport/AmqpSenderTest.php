@@ -18,6 +18,7 @@ use Symfony\Component\Messenger\Bridge\Amqp\Transport\AmqpStamp;
 use Symfony\Component\Messenger\Bridge\Amqp\Transport\Connection;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Exception\TransportException;
+use Symfony\Component\Messenger\Stamp\SentToFailureTransportStamp;
 use Symfony\Component\Messenger\Transport\Serialization\SerializerInterface;
 
 /**
@@ -114,6 +115,21 @@ class AmqpSenderTest extends TestCase
 
         $connection = $this->createMock(Connection::class);
         $connection->method('publish')->with($encoded['body'], $encoded['headers'])->willThrowException(new \AMQPException());
+
+        $sender = new AmqpSender($connection, $serializer);
+        $sender->send($envelope);
+    }
+
+    public function testItSendsTheEncodedMessageForcingDefaultRoutingKey()
+    {
+        $envelope = (new Envelope(new DummyMessage('Oy'), [new SentToFailureTransportStamp('dummy')]))->with($stamp = new AmqpStamp('rk'));
+        $encoded = ['body' => '...', 'headers' => ['type' => DummyMessage::class]];
+
+        $serializer = $this->createMock(SerializerInterface::class);
+        $serializer->method('encode')->with($envelope)->willReturn($encoded);
+
+        $connection = $this->createMock(Connection::class);
+        $connection->expects($this->once())->method('publish')->with($encoded['body'], $encoded['headers'], 0, $stamp, true);
 
         $sender = new AmqpSender($connection, $serializer);
         $sender->send($envelope);

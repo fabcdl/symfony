@@ -297,7 +297,7 @@ class Connection
     /**
      * @throws \AMQPException
      */
-    public function publish(string $body, array $headers = [], int $delayInMs = 0, AmqpStamp $amqpStamp = null): void
+    public function publish(string $body, array $headers = [], int $delayInMs = 0, AmqpStamp $amqpStamp = null, $forceDefaultRoutingKey = false): void
     {
         $this->clearWhenDisconnected();
 
@@ -314,7 +314,7 @@ class Connection
         $this->publishOnExchange(
             $this->exchange(),
             $body,
-            $this->getRoutingKeyForMessage($amqpStamp),
+            $forceDefaultRoutingKey ? $this->getDefaultPublishRoutingKey() : $this->getRoutingKeyForMessage($amqpStamp),
             $headers,
             $amqpStamp
         );
